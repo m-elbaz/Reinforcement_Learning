@@ -1,0 +1,6 @@
+numpy
+pandas
+pytorch
+sklearn
+h5py
+gym==0.9.4
