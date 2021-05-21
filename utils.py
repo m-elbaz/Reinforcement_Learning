@@ -12,9 +12,13 @@ def create_data(stock):
 def get_data(stock=['AAPL','NVDA','TSLA']):
   stcks=[]
   for s in stock:
-    s_ = preprocess(pd.read_csv('data/daily_%s.csv'%s, usecols=['close'])).values[::-1]
+    a = pd.read_csv('data/daily_%s.csv' % s, usecols=['close', "Date"], index_col="Date")
+    s_ = preprocess(a).values
     stcks.append(s_)
+
+  c=np.array(stcks)
   # recent price are at top; reverse it
+
   return np.array(stcks)
 
 
@@ -105,4 +109,6 @@ def maybe_make_dir(directory):
     os.makedirs(directory)
 
 if __name__ == '__main__':
+
+  a=get_data(['AAPL', 'NVDA'])
   create_data('GOOGL')
