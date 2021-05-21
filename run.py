@@ -3,9 +3,9 @@ import time
 import numpy as np
 import argparse
 import re
-
 from envs import TradingEnv
 from agent_torch import DQNAgent
+from agent_torch_pg import PGAgent
 from utils import get_data, get_scaler, maybe_make_dir
 
 
@@ -35,13 +35,16 @@ if __name__ == '__main__':
   timestamp = time.strftime('%Y%m%d%H%M')
 
   data = np.around(get_data(['IBM','MSFT','QCOM']))
-  train_data = data[:, :-200]
-  test_data = data[:, -200:]
+  train_data = data[:, :1000]
+  test_data = data[:, 1000:]
 
   env = TradingEnv(train_data, args.initial_invest)
   state_size = env.observation_space.shape
   action_size = env.action_space.n
-  agent = DQNAgent(state_size, action_size, model=args.model, lr=args.lr)
+  if args.model=='PG':
+    agent = PGAgent(state_size, action_size, model=args.model, lr=args.lr)
+  else:
+    agent = DQNAgent(state_size, action_size, model=args.model, lr=args.lr)
   scaler = get_scaler(env)
 
   portfolio_value = []

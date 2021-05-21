@@ -112,3 +112,4 @@ if __name__ == '__main__':
 
   a=get_data(['AAPL', 'NVDA'])
   create_data('GOOGL')
+
