@@ -49,9 +49,17 @@ def get_rsi_timeseries(prices, n=30):
 def preprocess(data):
 
   data['returns_month'] = ((data['close'] - data['close'].shift(25)) / data['close'].shift(25))
-  data['returns_2month'] = (data['close'] - data['close'].shift(2 * 25)) / data['close'].shift(2 * 25)
-  data['returns_3month'] = (data['close'] - data['close'].shift(3 * 25)) / data['close'].shift(3 * 25)
+  data['returns_month'] = data['returns_month']/(np.sqrt(25)*data['returns_month'].ewm(span=60, adjust=False).std())
+
+  data['returns_2month'] = ((data['close'] - data['close'].shift(2 * 25)) / data['close'].shift(2*25))
+  data['returns_2month'] =data['returns_2month']/(np.sqrt(25*2)*data['returns_2month'].ewm(span=60, adjust=False).std())
+
+  data['returns_3month'] = ((data['close'] - data['close'].shift(3 * 25)) / data['close'].shift(3*25))
+  data['returns_3month']= data['returns_3month']/(np.sqrt(25*3)*data['returns_3month'].ewm(span=60, adjust=False).std())
+
   data['returns_year'] = (data['close'] - data['close'].shift(252)) / data['close'].shift(252)
+  data['returns_year']= data['returns_year']/(np.sqrt(252)*data['returns_year'].ewm(span=60, adjust=False).std())
+
 
   exp1 = data['close'].ewm(span=12, adjust=False).mean()
   exp2 = data['close'].ewm(span=26, adjust=False).mean()
