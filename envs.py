@@ -74,6 +74,9 @@ class TradingEnv(gym.Env):
         self._seed()
         self._reset()
 
+        #previous action
+
+
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]

@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
   start = dt.date(2015, 1, 1)
   end = dt.date(2020, 1, 1)
-  st = MultiStock(['AAPL', 'GOOGL', 'NVDA'])
+  st = MultiStock(['LTC-USD', 'ETH-USD', 'BTC-USD'])
   feat, date = st.get_all_features(start, end)
   train_data=np.around(feat)[:,:-400]
   test_data = np.around(feat)[:, -400:]
@@ -63,6 +63,7 @@ if __name__ == '__main__':
     state = scaler.transform([state])
     for time in range(env.n_step):
       action = agent.act(state)
+
       next_state, reward, done, info = env.step(action)
       next_state = scaler.transform([next_state])
       if args.mode == 'train':
