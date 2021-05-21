@@ -7,7 +7,8 @@ from envs import TradingEnv
 from agent_torch import DQNAgent
 from agent_torch_pg import PGAgent
 from utils import get_data, get_scaler, maybe_make_dir
-
+from data_handler import *
+import datetime as dt
 
 
 if __name__ == '__main__':
@@ -34,9 +35,12 @@ if __name__ == '__main__':
 
   timestamp = time.strftime('%Y%m%d%H%M')
 
-  data = np.around(get_data(['IBM','MSFT','QCOM']))
-  train_data = data[:, :1000]
-  test_data = data[:, 1000:]
+  start = dt.date(2015, 1, 1)
+  end = dt.date(2020, 1, 1)
+  st = MultiStock(['AAPL', 'GOOGL', 'NVDA'])
+  feat, date = st.get_all_features(start, end)
+  train_data=np.around(feat)[:,:-400]
+  test_data = np.around(feat)[:, -400:]
 
   env = TradingEnv(train_data, args.initial_invest)
   state_size = env.observation_space.shape
@@ -50,11 +54,8 @@ if __name__ == '__main__':
   portfolio_value = []
 
   if args.mode == 'test':
-    # remake the env with test data
     env = TradingEnv(test_data, args.initial_invest)
-    # load trained weights
     agent.load(args.weights)
-    # when test, the timestamp is same as time when weights was trained
     timestamp = re.findall(r'\d{12}', args.weights)[0]
 
   for e in range(args.episode):
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         break
       if args.mode == 'train' and len(agent.memory) > args.batch_size:
         agent.replay(args.batch_size)
-    if args.mode == 'train' and (e + 1) % 10 == 0:  # checkpoint weights
+    if args.mode == 'train' and (e+1) % 50 == 0:  # checkpoint weights
       agent.save('weights/{}-{}.h5'.format(timestamp, args.model))
 
   # save portfolio value history to disk
