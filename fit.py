@@ -1,6 +1,3 @@
-# Training
-
-
 
 def fit(X_train, net, optimizer, criterion, device, epoch):
     net.train()

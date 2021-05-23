@@ -15,20 +15,14 @@ def get_data(stock=['AAPL','NVDA','TSLA']):
     a = pd.read_csv('data/daily_%s.csv' % s, usecols=['close', "Date"], index_col="Date")
     s_ = preprocess(a).values
     stcks.append(s_)
-
-  c=np.array(stcks)
-  # recent price are at top; reverse it
-
   return np.array(stcks)
 
 
 def get_rsi_timeseries(prices, n=30):
 
   deltas = (prices - prices.shift(1)).fillna(0)
-
   avg_of_gains = deltas[1:n + 1][deltas > 0].sum() / n
   avg_of_losses = -deltas[1:n + 1][deltas < 0].sum() / n
-
   rsi_series = pd.Series(0.0, deltas.index)
 
   up = lambda x: x if x > 0 else 0
@@ -49,16 +43,16 @@ def get_rsi_timeseries(prices, n=30):
 def preprocess(data):
 
   data['returns_month'] = ((data['close'] - data['close'].shift(25)) / data['close'].shift(25))
-  data['returns_month'] = data['returns_month']/(np.sqrt(25)*data['returns_month'].ewm(span=60, adjust=False).std())
+  data['returns_month'] = data['returns_month']/(data['returns_month'].ewm(span=60, adjust=False).std())
 
   data['returns_2month'] = ((data['close'] - data['close'].shift(2 * 25)) / data['close'].shift(2*25))
-  data['returns_2month'] =data['returns_2month']/(np.sqrt(25*2)*data['returns_2month'].ewm(span=60, adjust=False).std())
+  data['returns_2month'] =data['returns_2month']/(data['returns_2month'].ewm(span=60, adjust=False).std())
 
   data['returns_3month'] = ((data['close'] - data['close'].shift(3 * 25)) / data['close'].shift(3*25))
-  data['returns_3month']= data['returns_3month']/(np.sqrt(25*3)*data['returns_3month'].ewm(span=60, adjust=False).std())
+  data['returns_3month']= data['returns_3month']/(data['returns_3month'].ewm(span=60, adjust=False).std())
 
   data['returns_year'] = (data['close'] - data['close'].shift(252)) / data['close'].shift(252)
-  data['returns_year']= data['returns_year']/(np.sqrt(252)*data['returns_year'].ewm(span=60, adjust=False).std())
+  data['returns_year']= data['returns_year']/(data['returns_year'].ewm(span=60, adjust=False).std())
 
 
   exp1 = data['close'].ewm(span=12, adjust=False).mean()
@@ -66,6 +60,13 @@ def preprocess(data):
   data['macd'] = exp1 - exp2
 
   data['rsi'] = get_rsi_timeseries(data['close'])
+
+  data['daily_vol']= (data['close'] - data['close'].shift(1))/data['close'].shift(1)
+  data['daily_vol']=(data['daily_vol'].ewm(span=60, adjust=False).std())*np.sqrt(252)
+
+  data['annual_vol']= (data['close'] - data['close'].shift(252))/data['close'].shift(252)
+  data['annual_vol']=(data['annual_vol'].ewm(span=60, adjust=False).std())
+
 
   data = data.dropna()
 

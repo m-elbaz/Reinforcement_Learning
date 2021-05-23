@@ -13,7 +13,7 @@ import datetime as dt
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('-e', '--episode', type=int, default=2000,
+  parser.add_argument('-e', '--episode', type=int, default=1,
                       help='number of episode to run')
   parser.add_argument('-b', '--batch_size', type=int, default=32,
                       help='batch size for experience replay')
@@ -32,15 +32,24 @@ if __name__ == '__main__':
   maybe_make_dir('weights')
   maybe_make_dir('portfolio_val')
   maybe_make_dir('portfolio_hist')
+  maybe_make_dir('stocks_hist')
 
-  timestamp = time.strftime('%Y%m%d%H%M')
+  #timestamp = time.strftime('%Y%m%d%H%M')
+  timestamp = args.initial_invest
 
-  start = dt.date(2015, 1, 1)
-  end = dt.date(2020, 1, 1)
-  st = MultiStock(['AAPL', 'GOOGL', 'NVDA'])
+  #start = dt.date(2015, 1, 1)
+  #end = dt.date(2021, 1, 1)
+  #st = MultiStock(['AAPL', 'NVDA', 'TSLA'])
+  #feat, date = st.get_all_features(start, end)
+  #train_data=np.around(feat)[:,:-400]
+  #test_data = np.around(feat)[:, -400:]
+
+  start = dt.date(2016, 1, 1)
+  end = dt.date(2021, 2, 1)
+  st = MultiStock(['BCH-USD', 'MKR-USD', 'ETH-USD'])
   feat, date = st.get_all_features(start, end)
-  train_data=np.around(feat)[:,:-400]
-  test_data = np.around(feat)[:, -400:]
+  train_data = np.around(feat)[:, :-150]
+  test_data = np.around(feat)[:, -150:]
 
   env = TradingEnv(train_data, args.initial_invest)
   state_size = env.observation_space.shape
@@ -56,7 +65,7 @@ if __name__ == '__main__':
   if args.mode == 'test':
     env = TradingEnv(test_data, args.initial_invest)
     agent.load(args.weights)
-    timestamp = re.findall(r'\d{12}', args.weights)[0]
+    timestamp = timestamp
 
   for e in range(args.episode):
     state = env.reset()
@@ -64,6 +73,7 @@ if __name__ == '__main__':
     for time in range(env.n_step):
       action = agent.act(state)
       next_state, reward, done, info = env.step(action)
+      a=env.stocks_l
       next_state = scaler.transform([next_state])
       if args.mode == 'train':
         agent.remember(state, action, reward, next_state, done)
@@ -77,6 +87,8 @@ if __name__ == '__main__':
         agent.replay(args.batch_size)
     if args.mode == 'train' and (e+1) % 50 == 0:  # checkpoint weights
       agent.save('weights/{}-{}.h5'.format(timestamp, args.model))
+    with open('stocks_hist/{}-{}-{}.p'.format(timestamp, args.mode, args.model), 'wb') as fp:
+      pickle.dump(env.stocks_l, fp)
 
   # save portfolio value history to disk
   with open('portfolio_val/{}-{}-{}.p'.format(timestamp, args.mode, args.model), 'wb') as fp:
@@ -84,3 +96,4 @@ if __name__ == '__main__':
 
   with open('portfolio_hist/{}-{}-{}.p'.format(timestamp, args.mode, args.model), 'wb') as fp:
     pickle.dump(env.portfolio_history, fp)
+
