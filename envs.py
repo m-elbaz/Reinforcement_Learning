@@ -6,11 +6,27 @@ import itertools
 
 
 class TradingEnv(gym.Env):
+    """
+    A 3-stock (MSFT, IBM, QCOM) trading environment.
+
+    State: [# of stock owned, current stock prices, cash in hand]
+      - array of length n_stock * 2 + 1
+      - price is discretized (to integer) to reduce state space
+      - use close price for each stock
+      - cash in hand is evaluated at each step based on action performed
+
+    Action: sell (0), hold (1), and buy (2)
+      - when selling, sell all the shares
+      - when buying, buy as many as cash in hand allows
+      - if buying multiple stock, equally distribute cash in hand and then utilize the balance
+    """
 
     def __init__(self, train_data, init_invest=20000):
+        # data
         self.stock_price_history = np.around(train_data)  # round up to integer to reduce state space
         self.n_stock, self.n_step, _ = self.stock_price_history.shape
 
+        # instance attributes
         self.init_invest = init_invest
         self.cur_step = None
         self.stock_owned = None
@@ -28,8 +44,10 @@ class TradingEnv(gym.Env):
 
         self.cash_in_hand = None
 
+        # action space
         self.action_space = spaces.Discrete(3 ** self.n_stock)
 
+        # observation space: give estimates in order to sample and build scaler
         stock_max_price = self.stock_price_history.max(axis=1)[:, 0]
         stock_max_rmo = self.stock_price_history.max(axis=1)[:, 1]
         stock_max_r2mo = self.stock_price_history.max(axis=1)[:, 2]
