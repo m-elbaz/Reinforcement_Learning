@@ -11,7 +11,6 @@ import torch.optim as optim
 
 
 class PGAgent(object):
-    """ A simple Deep Q agent """
 
     def __init__(self, state_size, action_size, model='PG', lr=0.001):
         self.state_size = state_size
@@ -37,7 +36,6 @@ class PGAgent(object):
         return distrib[0][0]  # returns action
 
     def replay(self, batch_size=32):
-        """ vectorized implementation; 30x speed up compared with for loop """
         minibatch = random.sample(self.memory, batch_size)
 
         states = np.array([tup[0][0] for tup in minibatch])

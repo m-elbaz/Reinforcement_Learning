@@ -61,10 +61,10 @@ def preprocess(data):
 
   data['rsi'] = get_rsi_timeseries(data['close'])
 
-  data['daily_vol']= (data['close'] - data['close'].shift(1))
-  data['daily_vol']=(data['daily_vol'].ewm(span=60, adjust=False).std())
+  data['daily_vol']= (data['close'] - data['close'].shift(1))/data['close'].shift(1)
+  data['daily_vol']=(data['daily_vol'].ewm(span=60, adjust=False).std())*np.sqrt(252)
 
-  data['annual_vol']= (data['close'] - data['close'].shift(252))
+  data['annual_vol']= (data['close'] - data['close'].shift(252))/data['close'].shift(252)
   data['annual_vol']=(data['annual_vol'].ewm(span=60, adjust=False).std())
 
 

@@ -6,27 +6,11 @@ import itertools
 
 
 class TradingEnv(gym.Env):
-    """
-    A 3-stock (MSFT, IBM, QCOM) trading environment.
-
-    State: [# of stock owned, current stock prices, cash in hand]
-      - array of length n_stock * 2 + 1
-      - price is discretized (to integer) to reduce state space
-      - use close price for each stock
-      - cash in hand is evaluated at each step based on action performed
-
-    Action: sell (0), hold (1), and buy (2)
-      - when selling, sell all the shares
-      - when buying, buy as many as cash in hand allows
-      - if buying multiple stock, equally distribute cash in hand and then utilize the balance
-    """
 
     def __init__(self, train_data, init_invest=20000):
-        # data
         self.stock_price_history = np.around(train_data)  # round up to integer to reduce state space
         self.n_stock, self.n_step, _ = self.stock_price_history.shape
 
-        # instance attributes
         self.init_invest = init_invest
         self.cur_step = None
         self.stock_owned = None
@@ -39,13 +23,13 @@ class TradingEnv(gym.Env):
         self.stock_ryear = None
         self.stock_macd = None
         self.stock_rsi = None
+        self.daily_vol = None
+        self.tgt_vol = None
 
         self.cash_in_hand = None
 
-        # action space
         self.action_space = spaces.Discrete(3 ** self.n_stock)
 
-        # observation space: give estimates in order to sample and build scaler
         stock_max_price = self.stock_price_history.max(axis=1)[:, 0]
         stock_max_rmo = self.stock_price_history.max(axis=1)[:, 1]
         stock_max_r2mo = self.stock_price_history.max(axis=1)[:, 2]
@@ -69,13 +53,11 @@ class TradingEnv(gym.Env):
         self.observation_space = spaces.MultiDiscrete(stock_range + price_range + rmo_range + r2mo_range + r3mo_range +
                                                       ryear_range + macd_range + rsi_range + cash_in_hand_range)
 
-        self.portfolio_history=[]
+        self.portfolio_history = []
+        self.stocks_l = []
         # seed and start
         self._seed()
         self._reset()
-
-        #previous action
-
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -84,7 +66,6 @@ class TradingEnv(gym.Env):
     def _reset(self):
         self.cur_step = 0
         self.stock_owned = [0] * self.n_stock
-
         self.stock_price = self.stock_price_history[:, self.cur_step, 0]
 
         self.stock_rmo = self.stock_price_history[:, self.cur_step, 1]
@@ -93,6 +74,8 @@ class TradingEnv(gym.Env):
         self.stock_ryear = self.stock_price_history[:, self.cur_step, 4]
         self.stock_macd = self.stock_price_history[:, self.cur_step, 5]
         self.stock_rsi = self.stock_price_history[:, self.cur_step, 6]
+        self.daily_vol = self.stock_price_history[:, self.cur_step, 7]
+        self.tgt_vol = self.stock_price_history[:, self.cur_step, 8]
 
         self.cash_in_hand = self.init_invest
         return self._get_obs()
@@ -114,11 +97,17 @@ class TradingEnv(gym.Env):
         self._trade(action)
 
         cur_val = self._get_val()
-        reward = cur_val - prev_val
+        reward = (cur_val - prev_val)
+
+        self.daily_vol = self.stock_price_history[:, self.cur_step, 7]
+        self.tgt_vol = self.stock_price_history[:, self.cur_step, 8]
+
         done = self.cur_step == self.n_step - 1
         info = {'cur_val': cur_val}
 
         self.portfolio_history.append(cur_val)
+        a = self.stock_owned.copy()
+        (self.stocks_l).append(a)
 
         return self._get_obs(), reward, done, info
 
@@ -167,3 +156,17 @@ class TradingEnv(gym.Env):
                         self.cash_in_hand -= self.stock_price[i]
                     else:
                         can_buy = False
+
+
+if __name__ == '__main__':
+    from data_handler import *
+    import datetime as dt
+
+    start = dt.date(2015, 1, 1)
+    end = dt.date(2020, 1, 1)
+    st = MultiStock(['LTC-USD', 'ETH-USD', 'BTC-USD'])
+    feat, date = st.get_all_features(start, end)
+    train_data = np.around(feat)[:, :-400]
+    test_data = np.around(feat)[:, -400:]
+
+    env = TradingEnv(train_data, 20000)
